@@ -1,103 +1,159 @@
-// UserInfoScreen.js
+// screens/UserInfoScreen.js
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import Toast from 'react-native-simple-toast';
 
 const UserInfoScreen = ({ route }) => {
+  const navigation = useNavigation();
   const { username } = route.params || {};
-  console.log('Username:', username);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Add useEffect to fetch user info
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const response = await axios.get(`http://10.0.2.2:8080/api/auth/users/username/${username}`);
-        if (response.status === 200) {
-          setUserInfo(response.data.data);
-        }
-      } catch (error) {
-        Toast.show('Không thể tải thông tin người dùng');
-        console.error('Error fetching user info:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserInfo();
   }, [username]);
 
-  const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      Toast.show('Vui lòng nhập đầy đủ thông tin');
-      return;
+  const fetchUserInfo = async () => {
+    try {
+      const response = await axios.get(`http://10.0.2.2:8080/api/auth/users/username/${username}`);
+      if (response.status === 200) {
+        setUserInfo(response.data.data);
+      }
+    } catch (error) {
+      Toast.show('Không thể tải thông tin người dùng', Toast.LONG);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      Toast.show('Mật khẩu mới không khớp');
+      Toast.show('Mật khẩu xác nhận không khớp', Toast.LONG);
       return;
     }
 
     try {
-      const response = await axios.put(`http://10.0.2.2:8080/api/auth/users/change-password/${username}`, {
-        password: newPassword
+      const response = await axios.put(`http://10.0.2.2:8080/api/auth/users/${userInfo.id}/password`, {
+        newPassword: newPassword
       });
 
       if (response.status === 200) {
-        Toast.show('Đổi mật khẩu thành công');
+        Toast.show('Đổi mật khẩu thành công', Toast.SHORT);
         setModalVisible(false);
         setNewPassword('');
         setConfirmPassword('');
       }
     } catch (error) {
-      Toast.show(error.response?.data?.message || 'Đổi mật khẩu thất bại');
+      Toast.show('Không thể đổi mật khẩu', Toast.LONG);
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Xác nhận đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: () => {
+            Toast.show('Đã đăng xuất', Toast.SHORT);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }]
+            });
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
-  if (!userInfo) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Không tìm thấy thông tin người dùng</Text>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Thông tin cá nhân</Text>
-      <Text style={styles.info}>Tên tài khoản: {userInfo.username}</Text>
-      <Text style={styles.info}>Họ và tên: {userInfo.fullName}</Text>
-      <Text style={styles.info}>Email: {userInfo.email}</Text>
-      <Text style={styles.info}>Số điện thoại: {userInfo.phoneNumber}</Text>
-      <Text style={styles.info}>Ngày sinh: {userInfo.dateOfBirth}</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.avatarContainer}>
+          <Icon name="user-circle" size={80} color="#007AFF" />
+        </View>
+        <Text style={styles.userName}>{userInfo?.fullName}</Text>
+        <Text style={styles.userRole}>{userInfo?.role === 'STUDENT' ? 'Học viên' : 'Quản trị viên'}</Text>
+      </View>
 
-      <TouchableOpacity 
-        style={styles.changePasswordButton}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.buttonText}>Đổi mật khẩu</Text>
-      </TouchableOpacity>
+      <View style={styles.infoSection}>
+        <View style={styles.infoItem}>
+          <Icon name="user" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Tên tài khoản:</Text>
+          <Text style={styles.infoValue}>{userInfo?.username}</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Icon name="envelope" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Email:</Text>
+          <Text style={styles.infoValue}>{userInfo?.email}</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Icon name="phone" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Số điện thoại:</Text>
+          <Text style={styles.infoValue}>{userInfo?.phoneNumber}</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Icon name="calendar" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Ngày sinh:</Text>
+          <Text style={styles.infoValue}>{userInfo?.dateOfBirth}</Text>
+        </View>
+      </View>
+
+      <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={styles.changePasswordButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Icon name="lock" size={20} color="#fff" />
+          <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Icon name="sign-out" size={20} color="#fff" />
+          <Text style={styles.buttonText}>Đăng xuất</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal
-        animationType="slide"
-        transparent={true}
         visible={modalVisible}
+        transparent
+        animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Đổi mật khẩu</Text>
             
@@ -108,6 +164,7 @@ const UserInfoScreen = ({ route }) => {
               value={newPassword}
               onChangeText={setNewPassword}
             />
+
             <TextInput
               style={styles.input}
               placeholder="Xác nhận mật khẩu mới"
@@ -117,8 +174,8 @@ const UserInfoScreen = ({ route }) => {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setModalVisible(false);
                   setNewPassword('');
@@ -127,8 +184,9 @@ const UserInfoScreen = ({ route }) => {
               >
                 <Text style={styles.buttonText}>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
+
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleChangePassword}
               >
                 <Text style={styles.buttonText}>Lưu</Text>
@@ -137,53 +195,106 @@ const UserInfoScreen = ({ route }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
-
-// ... rest of the styles remain the same
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centered: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f8ff',
-    padding: 20,
   },
-  title: {
+  header: {
+    backgroundColor: '#fff',
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f0f8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#333',
+    marginBottom: 4,
   },
-  info: {
-    fontSize: 18,
-    marginBottom: 10,
+  userRole: {
+    fontSize: 16,
+    color: '#666',
+  },
+  infoSection: {
+    backgroundColor: '#fff',
+    padding: 20,
+    marginTop: 20,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 12,
+    width: 120,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  actionButtons: {
+    padding: 20,
   },
   changePasswordButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 15,
     borderRadius: 10,
-    width: '80%',
+    marginBottom: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#FF3B30',
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    padding: 15,
+    borderRadius: 10,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginLeft: 8,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 20,
-    borderRadius: 10,
-    width: '80%',
+    width: '90%',
   },
   modalTitle: {
     fontSize: 20,
@@ -192,27 +303,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  button: {
-    padding: 10,
-    borderRadius: 5,
-    width: '45%',
+  modalButton: {
+    flex: 0.45,
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#6c757d',
   },
   saveButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#007AFF',
   },
 });
 

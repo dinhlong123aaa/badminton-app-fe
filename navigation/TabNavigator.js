@@ -1,11 +1,11 @@
-// TabNavigator.js
+// navigation/TabNavigator.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import HomeScreen from '../screens/HomeScreen';
-import ListCourse from '../screens/ListCourse';
+import LessonsStackNavigator from './LessonsStackNavigator';
 import UserInfoScreen from '../screens/UserInfoScreen';
-import UserManagerScreen from '../screens/UserManagerScreen';
+import ManagementStackNavigator from './ManagementStackNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -26,25 +26,28 @@ const TabNavigator = ({ screenProps }) => {
               iconName = 'user';
               break;
             case 'Quản lý':
-              iconName = 'users';
+              iconName = 'cogs';
               break;
             default:
               iconName = 'circle';
           }
           return <Icon name={iconName} size={size} color={color} />;
         },
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false
       })}
     >
       <Tab.Screen
         name="Trang chủ"
         component={HomeScreen}
       />
-      <Tab.Screen
+     <Tab.Screen
         name="Bài học"
-        component={ListCourse}
+        component={LessonsStackNavigator}
         initialParams={{
-          userId: screenProps?.userId,
-          username: screenProps?.username
+          username: screenProps?.username,
+          userId: screenProps?.userId
         }}
       />
       <Tab.Screen
@@ -54,8 +57,7 @@ const TabNavigator = ({ screenProps }) => {
       />
       <Tab.Screen
         name="Quản lý"
-        component={UserManagerScreen}
-        options={{ title: 'Quản lý học viên' }}
+        component={ManagementStackNavigator}
       />
     </Tab.Navigator>
   );

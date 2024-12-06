@@ -7,19 +7,19 @@ const StartScreen = ({ route }) => {
   console.log('StartScreen params:', route.params);
   return (
     <View style={styles.container}>
-      <TabNavigator 
-        screenProps={{
-          userId: userId,
-          username: username,
-          userInfo: {
-            fullName,
-            email,
-            phoneNumber,
-            dateOfBirth
-          }
-        }}
-      />
-    </View>
+    <TabNavigator 
+      screenProps={{
+        userId: userId,
+        username: username,
+        userInfo: {
+          fullName,
+          email,
+          phoneNumber,
+          dateOfBirth
+        }
+      }}
+    />
+  </View>
   );
 };
 
